@@ -10,23 +10,15 @@ jobs:
   statictest:
     runs-on: ubuntu-latest
     container: golang:1.27
+    env:
+      GOTOOLCHAIN: local
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Download statictest binary
-        uses: robinraju/release-downloader@v1.8
-        with:
-          repository: Yandex-Practicum/go-autotests
-          latest: true
-          fileName: statictest
-          out-file-path: .tools
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup autotest binary
+      - name: Build statictest with current Go version
         run: |
-          chmod -R +x $GITHUB_WORKSPACE/.tools/statictest
-          mv $GITHUB_WORKSPACE/.tools/statictest /usr/local/bin/statictest
+          GOBIN=/usr/local/bin go install github.com/Yandex-Practicum/go-autotests/cmd/statictest@latest
 
       - name: Run statictest
         run: |
