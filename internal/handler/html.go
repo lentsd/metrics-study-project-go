@@ -41,7 +41,7 @@ const metricsHTML = `<!DOCTYPE html>
 
 var metricsTemplate = template.Must(template.New("metrics").Parse(metricsHTML))
 
-func HtmlHandler(rw http.ResponseWriter, r *http.Request, metricStorage MetricStorage) {
+func HTMLHandler(rw http.ResponseWriter, r *http.Request, metricStorage MetricStorage) {
 	var page bytes.Buffer
 	if err := metricsTemplate.Execute(&page, metricStorage.GetAllMetrics()); err != nil {
 		http.Error(rw, "Failed to render metrics", http.StatusInternalServerError)

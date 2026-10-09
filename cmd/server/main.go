@@ -23,7 +23,7 @@ func main() {
 	})
 
 	router.Get("/", func(rw http.ResponseWriter, r *http.Request) {
-		handler.HtmlHandler(rw, r, memStorage)
+		handler.HTMLHandler(rw, r, memStorage)
 	})
 
 	http.ListenAndServe(":8080", router)
