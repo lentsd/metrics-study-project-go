@@ -1,12 +1,14 @@
 package handler
 
 import (
-	"fmt"
+	"io"
 	"net/http"
 	"strconv"
-	"strings"
 
 	models "metrics-study-project-go/internal/model"
+	"metrics-study-project-go/internal/repository"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // URL format: /update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
@@ -14,34 +16,27 @@ import (
 type MetricStorage interface {
 	SetGauge(string, float64)
 	AddCounter(string, int64)
+	GetMetric(string, string) (string, bool)
+	GetAllMetrics() []repository.Metric
 }
 
 func MetricHandler(res http.ResponseWriter, req *http.Request, metricStorage MetricStorage) {
-	if req.Method != http.MethodPost {
-		http.Error(res, "Only POST method is allowed!", http.StatusMethodNotAllowed)
 
-		return
-	}
+	metricType := chi.URLParam(req, "metricType")
+	metricName := chi.URLParam(req, "metricName")
+	metricValue := chi.URLParam(req, "metricValue")
 
-	pathParts := strings.Split(req.URL.Path, "/")
-
-	if len(pathParts) < 4 || pathParts[3] == "" {
+	if metricName == "" {
 		http.Error(res, "Empty name", http.StatusNotFound)
 
 		return
 	}
 
-	if len(pathParts) != 5 {
+	if metricType == "" || metricValue == "" {
 		http.Error(res, "Wrong format!", http.StatusBadRequest)
 
 		return
 	}
-
-	metricType := pathParts[2]
-	metricName := pathParts[3]
-	metricValue := pathParts[4]
-
-	fmt.Println(metricType, metricName, metricValue)
 
 	switch metricType {
 	case models.Gauge:
@@ -69,4 +64,25 @@ func MetricHandler(res http.ResponseWriter, req *http.Request, metricStorage Met
 
 		return
 	}
+}
+
+func ValueHandler(rw http.ResponseWriter, r *http.Request, metricStorage MetricStorage) {
+	metricType := chi.URLParam(r, "metricType")
+	metricName := chi.URLParam(r, "metricName")
+
+	if metricType == "" || metricName == "" {
+		http.Error(rw, "Wrong format (no name or type)", http.StatusBadRequest)
+
+		return
+	}
+
+	res, ok := metricStorage.GetMetric(metricType, metricName)
+
+	if !ok {
+		http.Error(rw, "No metric found", http.StatusNotFound)
+
+		return
+	}
+
+	io.WriteString(rw, res)
 }
