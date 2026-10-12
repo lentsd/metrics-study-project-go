@@ -3,13 +3,21 @@ package main
 import (
 	"net/http"
 
+	"flag"
+
 	"metrics-study-project-go/internal/handler"
 	"metrics-study-project-go/internal/repository"
 
 	"github.com/go-chi/chi/v5"
 )
 
+var flagRunAddr string
+
 func main() {
+	flag.StringVar(&flagRunAddr, "a", "localhost:8080", "address and port to run server")
+
+	flag.Parse()
+
 	memStorage := repository.InitMemStorage()
 
 	router := chi.NewRouter()
@@ -26,5 +34,5 @@ func main() {
 		handler.HTMLHandler(rw, r, memStorage)
 	})
 
-	http.ListenAndServe(":8080", router)
+	http.ListenAndServe(flagRunAddr, router)
 }

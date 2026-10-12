@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetMetrics(t *testing.T) {
-	agent := CreateAgent()
+	agent := CreateAgent("localhost:8080", 10, 2)
 
 	agent.getMetrics()
 
@@ -57,8 +57,7 @@ func TestSendMetric(t *testing.T) {
 
 	t.Cleanup(server.Close)
 
-	agent := CreateAgent()
-	agent.serverAddress = server.URL
+	agent := CreateAgent(server.Listener.Addr().String(), 10, 2)
 
 	err := agent.sendMetric("Alloc", 12.5)
 	if err != nil {

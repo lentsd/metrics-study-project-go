@@ -9,9 +9,11 @@ import (
 )
 
 type Agent struct {
-	pollCount     int64
-	gaugeMetrics  map[string]float64
-	serverAddress string
+	pollCount       int64
+	gaugeMetrics    map[string]float64
+	serverAddress   string
+	collectInterval time.Duration
+	sendInterval    time.Duration
 }
 
 func (a *Agent) getMetrics() {
@@ -110,7 +112,7 @@ func (a *Agent) Run() {
 	for {
 		a.getMetrics()
 
-		if time.Since(lastUpdate) >= time.Second*10 {
+		if time.Since(lastUpdate) >= a.sendInterval {
 			err := a.sendMetrics()
 
 			if err != nil {
@@ -120,15 +122,17 @@ func (a *Agent) Run() {
 			lastUpdate = time.Now()
 		}
 
-		time.Sleep(time.Second * 2)
+		time.Sleep(a.collectInterval)
 	}
 }
 
-func CreateAgent() *Agent {
+func CreateAgent(serverAddress string, sendInterval int, collectInterval int) *Agent {
 	var agent Agent
 
-	agent.serverAddress = "http://localhost:8080"
+	agent.serverAddress = "http://" + serverAddress
 	agent.gaugeMetrics = make(map[string]float64)
+	agent.collectInterval = time.Duration(collectInterval) * time.Second
+	agent.sendInterval = time.Duration(sendInterval) * time.Second
 
 	return &agent
 }
