@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"flag"
 
@@ -17,6 +18,8 @@ func main() {
 	flag.StringVar(&flagRunAddr, "a", "localhost:8080", "address and port to run server")
 
 	flag.Parse()
+
+	setupServerAddress()
 
 	memStorage := repository.InitMemStorage()
 
@@ -35,4 +38,12 @@ func main() {
 	})
 
 	http.ListenAndServe(flagRunAddr, router)
+}
+
+func setupServerAddress() {
+	serverAddress, ok := os.LookupEnv("ADDRESS")
+
+	if ok {
+		flagRunAddr = serverAddress
+	}
 }
