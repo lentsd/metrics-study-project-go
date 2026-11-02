@@ -16,6 +16,8 @@ import (
 type MetricStorage interface {
 	SetGauge(string, float64)
 	AddCounter(string, int64)
+	GetGauge(string) (float64, bool)
+	GetCounter(string) (int64, bool)
 	GetMetric(string, string) (string, bool)
 	GetAllMetrics() []repository.Metric
 }
