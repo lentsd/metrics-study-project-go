@@ -1,15 +1,17 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"net/http"
 	"os"
 
-	"flag"
-
 	"metrics-study-project-go/internal/handler"
+	"metrics-study-project-go/internal/middleware"
 	"metrics-study-project-go/internal/repository"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 var flagRunAddr string
@@ -21,9 +23,26 @@ func main() {
 
 	setupServerAddress()
 
+	loggerConfig := zap.NewProductionConfig()
+
+	logger, err := loggerConfig.Build()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+
+	defer logger.Sync()
+
+	if err := http.ListenAndServe(flagRunAddr, newRouter(logger)); err != nil {
+		logger.Info("server stopped", zap.Error(err))
+	}
+}
+
+func newRouter(logger *zap.Logger) http.Handler {
 	memStorage := repository.InitMemStorage()
 
 	router := chi.NewRouter()
+	router.Use(middleware.RequestLogger(logger))
 
 	router.Post("/update/{metricType}/{metricName}/{metricValue}", func(rw http.ResponseWriter, r *http.Request) {
 		handler.MetricHandler(rw, r, memStorage)
@@ -37,7 +56,7 @@ func main() {
 		handler.HTMLHandler(rw, r, memStorage)
 	})
 
-	http.ListenAndServe(flagRunAddr, router)
+	return router
 }
 
 func setupServerAddress() {
