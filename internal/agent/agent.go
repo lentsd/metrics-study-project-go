@@ -1,11 +1,16 @@
 package agent
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand/v2"
 	"net/http"
 	"runtime"
 	"time"
+
+	models "metrics-study-project-go/internal/model"
 )
 
 type Agent struct {
@@ -53,28 +58,28 @@ func (a *Agent) getMetrics() {
 }
 
 func (a *Agent) sendMetric(name string, value float64) error {
-	address := fmt.Sprintf("%s/update/gauge/%s/%g", a.serverAddress, name, value)
-
-	response, err := http.Post(address, "text/plain", nil)
-
-	if err != nil {
-		return err
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("send metric: %s status %d", name, response.StatusCode)
-	}
-
-	return nil
+	return a.sendJSONMetric(models.Metrics{
+		ID:    name,
+		MType: models.Gauge,
+		Value: &value,
+	})
 }
 
 func (a *Agent) sendCounter(name string, value int64) error {
-	address := fmt.Sprintf("%s/update/counter/%s/%d", a.serverAddress, name, value)
+	return a.sendJSONMetric(models.Metrics{
+		ID:    name,
+		MType: models.Counter,
+		Delta: &value,
+	})
+}
 
-	response, err := http.Post(address, "text/plain", nil)
+func (a *Agent) sendJSONMetric(metric models.Metrics) error {
+	body, err := json.Marshal(metric)
+	if err != nil {
+		return fmt.Errorf("encode metric %s: %w", metric.ID, err)
+	}
 
+	response, err := http.Post(a.serverAddress+"/update", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -82,7 +87,11 @@ func (a *Agent) sendCounter(name string, value int64) error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("send counter: %s status %d", name, response.StatusCode)
+		return fmt.Errorf("send metric: %s status %d", metric.ID, response.StatusCode)
+	}
+
+	if _, err := io.Copy(io.Discard, response.Body); err != nil {
+		return fmt.Errorf("read metric response: %w", err)
 	}
 
 	return nil

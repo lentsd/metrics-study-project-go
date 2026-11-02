@@ -44,6 +44,18 @@ func newRouter(logger *zap.Logger) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestLogger(logger))
 
+	updateJSON := func(rw http.ResponseWriter, r *http.Request) {
+		handler.UpdateJSONHandler(rw, r, memStorage)
+	}
+	router.Post("/update", updateJSON)
+	router.Post("/update/", updateJSON)
+
+	valueJSON := func(rw http.ResponseWriter, r *http.Request) {
+		handler.ValueJSONHandler(rw, r, memStorage)
+	}
+	router.Post("/value", valueJSON)
+	router.Post("/value/", valueJSON)
+
 	router.Post("/update/{metricType}/{metricName}/{metricValue}", func(rw http.ResponseWriter, r *http.Request) {
 		handler.MetricHandler(rw, r, memStorage)
 	})
